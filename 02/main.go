@@ -8,6 +8,10 @@ import (
 
 // speed code, commit horror
 
+// forgive me, this code really stank by the end of it
+// the spirit of refactoring will strike me down with lightning
+// for ever letting this exist, even in a comp repo
+
 type score struct {
 	l, d, w int
 }
