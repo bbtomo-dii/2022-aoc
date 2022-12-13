@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	f := loadfl("input.txt")
+	f := loadfl("../input.txt")
 	var pack [][]string
 	// get splits
 	for _, l := range f {
@@ -49,7 +49,7 @@ func main() {
 }
 
 func loadfl(f string) []string {
-	dat, err := os.ReadFile("input.txt")
+	dat, err := os.ReadFile(f)
 	if err != nil {
 		panic(err)
 	}
