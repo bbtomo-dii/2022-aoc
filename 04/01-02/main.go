@@ -13,7 +13,9 @@ type rng struct {
 
 func main() {
 
-	count := 0
+	olCount := 0
+	tcCount := 0
+
 	f := loadfl("../input.txt")
 	for _, v := range f {
 		if v != "" {
@@ -21,12 +23,23 @@ func main() {
 			r1 := getNums(p[0])
 			r2 := getNums(p[1])
 			if r1.inside(r2) || r2.inside(r1) {
-				count++
+				olCount++
+			}
+			if r1.touches(r2) || r2.touches(r1) {
+				tcCount++
 			}
 		}
 	}
 
-	fmt.Printf("Final count: %d", count)
+	fmt.Printf("Overlap Count: %d\n", olCount)
+	fmt.Printf("Touch Count: %d\n", tcCount)
+}
+
+func (l rng) touches(r rng) bool {
+	if ((l.l >= r.l) && (l.l <= r.r)) || ((l.r >= r.l) && (l.r <= r.r)) {
+		return true
+	}
+	return false
 }
 
 func (l rng) inside(r rng) bool {
