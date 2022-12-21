@@ -12,11 +12,11 @@ type move struct {
 	qty, from, to int
 }
 
-var cratePos = [9]int{1, 5, 9, 13, 17, 21, 25, 29, 33}
+var containerPos = [9]int{1, 5, 9, 13, 17, 21, 25, 29, 33}
 var contBlank = " "
 
-// cratemap!
-type crates map[int][]string
+// containermap!
+type containers map[int][]string
 
 func main() {
 
@@ -27,67 +27,72 @@ func main() {
 	// next 11 is moves table
 	mv := f[10:]
 
-	// build crate state
+	// build container state
 	// 2x2, row then column
-	// populate crate state
-	crates := stackCrates(st)
+	// populate container state
+	containers := stackContainers(st)
 	fmt.Println("Initial state:")
-	crates.seeCrates()
+	containers.seeContainers()
 	mvt := buildMoves(mv)
 	fmt.Printf("Total moves: %d\n", len(mvt))
-	crates.runSingleMoves(mvt)
+	containers.runSingleMoves(mvt)
 	fmt.Println("Final state:")
-	crates.seeCrates()
+	containers.seeContainers()
 
 	// reset and run part 2
-	crates = stackCrates(st)
+	containers = stackContainers(st)
 	fmt.Println("Initial state:")
-	crates.seeCrates()
-	crates.runMultiMoves(mvt)
+	containers.seeContainers()
+	containers.runMultiMoves(mvt)
 	fmt.Println("Final state:")
-	crates.seeCrates()
+	containers.seeContainers()
 
 }
 
-func (c crates) singleMove(m move) {
-	for i := 0; i < m.qty; i++ {
-		// if any crates left:
-		l := len(c[m.from]) - 1
-		if l > -1 {
-			// move across
-			c[m.to] = append(c[m.to], c[m.from][l])
-			// delete
-			c[m.from] = c[m.from][:l]
-		} else {
-			panic("attempt to pull from empty stack")
+// helper functions
+
+func (c containers) seeContainers() {
+	// do visual confirmation on container layout
+	for i := 1; i <= len(c); i++ {
+		fmt.Printf("column number: %d, containers: %v\n", i, c[i])
+	}
+}
+
+func loadfl(f string) []string {
+	dat, err := os.ReadFile(f)
+	if err != nil {
+		panic(err)
+	}
+
+	return strings.Split(string(dat), "\n")
+}
+
+func explode(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// container and move setup process
+
+func stackContainers(st []string) containers {
+	// invert so we go column -> row
+	// init columsn
+	c := make(map[int][]string)
+
+	// take raw line and pluck out container ID
+	// iterate slice backwards so containers are "stacked"
+	// bottom to top in slice
+	for i := len(st) - 1; i > -1; i-- {
+		// extract columns
+		for n, p := range containerPos {
+			nc := string(st[i][p])
+			if nc != contBlank {
+				c[n+1] = append(c[n+1], nc)
+			}
 		}
 	}
-}
-
-// remember: lower inclusive, higher exclusive
-func (c crates) multiMove(m move) {
-	p := len(c[m.from]) - m.qty
-	if p < -1 {
-		panic("not enough crates to take")
-	}
-	c[m.to] = append(c[m.to], c[m.from][p:]...)
-	c[m.from] = c[m.from][:p]
-}
-
-func (c crates) runSingleMoves(mv []move) {
-	for _, m := range mv {
-		fmt.Printf("Exec move: %v\n", m)
-		c.singleMove(m)
-	}
-}
-
-func (c crates) runMultiMoves(mv []move) {
-	for _, m := range mv {
-		fmt.Printf("Exec move: %v\n", m)
-		c.multiMove(m)
-		fmt.Println("peek:")
-		c.seeCrates()
-	}
+	return c
 }
 
 func buildMoves(st []string) []move {
@@ -111,44 +116,42 @@ func buildMoves(st []string) []move {
 	return mv
 }
 
-func stackCrates(st []string) crates {
-	// invert so we go column -> row
-	// init columsn
-	c := make(map[int][]string)
+// single container movement code
 
-	// take raw line and pluck out container ID
-	// iterate slice backwards so crates are "stacked"
-	// bottom to top in slice
-	for i := len(st) - 1; i > -1; i-- {
-		// extract columns
-		for n, p := range cratePos {
-			nc := string(st[i][p])
-			if nc != contBlank {
-				c[n+1] = append(c[n+1], nc)
-			}
+func (c containers) singleMove(m move) {
+	for i := 0; i < m.qty; i++ {
+		// if any containers left:
+		l := len(c[m.from]) - 1
+		if l > -1 {
+			// move across
+			c[m.to] = append(c[m.to], c[m.from][l])
+			// delete
+			c[m.from] = c[m.from][:l]
+		} else {
+			panic("attempt to pull from empty stack")
 		}
 	}
-	return c
 }
 
-func (c crates) seeCrates() {
-	// do visual confirmation on crate layout
-	for i := 1; i <= len(c); i++ {
-		fmt.Printf("column number: %d, crates: %v\n", i, c[i])
+func (c containers) runSingleMoves(mv []move) {
+	for _, m := range mv {
+		c.singleMove(m)
 	}
 }
 
-func loadfl(f string) []string {
-	dat, err := os.ReadFile(f)
-	if err != nil {
-		panic(err)
-	}
+// multi container movement code
 
-	return strings.Split(string(dat), "\n")
+func (c containers) multiMove(m move) {
+	p := len(c[m.from]) - m.qty
+	if p < -1 {
+		panic("not enough containers to take")
+	}
+	c[m.to] = append(c[m.to], c[m.from][p:]...)
+	c[m.from] = c[m.from][:p]
 }
 
-func explode(err error) {
-	if err != nil {
-		panic(err)
+func (c containers) runMultiMoves(mv []move) {
+	for _, m := range mv {
+		c.multiMove(m)
 	}
 }
