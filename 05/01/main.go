@@ -4,7 +4,6 @@ import (
 	"fmt"
 	//"github.com/davecgh/go-spew/spew"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -26,44 +25,69 @@ func main() {
 	// first 8 lines are the stack
 	st := f[:8]
 	// next 11 is moves table
-	mv := f[11:]
+	mv := f[10:]
 
 	// build crate state
 	// 2x2, row then column
 	// populate crate state
 	crates := stackCrates(st)
-
-	// inspect
+	fmt.Println("Initial state:")
 	crates.seeCrates()
 	mvt := buildMoves(mv)
-	crates.runMoves(mvt)
+	fmt.Printf("Total moves: %d\n", len(mvt))
+	crates.runSingleMoves(mvt)
+	fmt.Println("Final state:")
+	crates.seeCrates()
+
+	// reset and run part 2
+	crates = stackCrates(st)
+	fmt.Println("Initial state:")
+	crates.seeCrates()
+	crates.runMultiMoves(mvt)
+	fmt.Println("Final state:")
 	crates.seeCrates()
 
 }
 
-func (c *crates) runMoves(mv []move) {
-	for _, m := range mv {
-		conts := c.getContainers(m.from, m.qty)
-		c.putContainers(m.to, conts)
-		fmt.Println("Crates update:")
-		c.seeCrates()
+func (c crates) singleMove(m move) {
+	for i := 0; i < m.qty; i++ {
+		// if any crates left:
+		l := len(c[m.from]) - 1
+		if l > -1 {
+			// move across
+			c[m.to] = append(c[m.to], c[m.from][l])
+			// delete
+			c[m.from] = c[m.from][:l]
+		} else {
+			panic("attempt to pull from empty stack")
+		}
 	}
 }
 
-func (c crates) putContainers(col int, conts []string) {
-	// reverse slice
-	conts = sort.StringSlice(conts)
-	c[col] = append(c[col], conts...)
+// remember: lower inclusive, higher exclusive
+func (c crates) multiMove(m move) {
+	p := len(c[m.from]) - m.qty
+	if p < -1 {
+		panic("not enough crates to take")
+	}
+	c[m.to] = append(c[m.to], c[m.from][p:]...)
+	c[m.from] = c[m.from][:p]
 }
 
-func (c crates) getContainers(col, num int) []string {
-	i := len(c[col]) - num
+func (c crates) runSingleMoves(mv []move) {
+	for _, m := range mv {
+		fmt.Printf("Exec move: %v\n", m)
+		c.singleMove(m)
+	}
+}
 
-	// pop containers out
-	conts := c[col][i:]
-	// delete from slice
-	c[col] = c[col][:i]
-	return conts
+func (c crates) runMultiMoves(mv []move) {
+	for _, m := range mv {
+		fmt.Printf("Exec move: %v\n", m)
+		c.multiMove(m)
+		fmt.Println("peek:")
+		c.seeCrates()
+	}
 }
 
 func buildMoves(st []string) []move {
@@ -109,14 +133,9 @@ func stackCrates(st []string) crates {
 
 func (c crates) seeCrates() {
 	// do visual confirmation on crate layout
-	for col, cont := range c {
-		var cr []string
-		for _, val := range cont {
-			cr = append(cr, val)
-		}
-		fmt.Printf("column number: %d, crates: %s\n", col, cr)
+	for i := 1; i <= len(c); i++ {
+		fmt.Printf("column number: %d, crates: %v\n", i, c[i])
 	}
-
 }
 
 func loadfl(f string) []string {
